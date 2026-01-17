@@ -1,0 +1,226 @@
+/* SillyTavern RPG Extension Styles */
+
+.rpg-panel {
+  background: var(--SmartThemeBlurTintColor);
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 10px;
+  padding: 15px;
+  margin: 10px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.rpg-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--SmartThemeBorderColor);
+  padding-bottom: 10px;
+}
+
+.rpg-panel-header h3 {
+  margin: 0;
+  color: var(--SmartThemeBodyColor);
+}
+
+.rpg-panel-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.rpg-section {
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+.rpg-section h4 {
+  margin: 0 0 10px 0;
+  color: var(--SmartThemeQuoteColor);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+#rpg-time-display,
+#rpg-location-display {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+#rpg-inventory-list,
+#rpg-relationships-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.rpg-item,
+.rpg-relationship {
+  padding: 8px;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--SmartThemeQuoteColor);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.rpg-item strong,
+.rpg-relationship strong {
+  color: var(--SmartThemeBodyColor);
+}
+
+.rpg-visited-list {
+  font-size: 11px;
+  color: var(--SmartThemeBodyColor);
+  margin-top: 5px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.rpg-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+.rpg-actions button {
+  flex: 1;
+  font-size: 12px;
+}
+
+/* Choice buttons */
+.rpg-choices {
+  background: var(--SmartThemeBlurTintColor);
+  border: 2px solid var(--SmartThemeQuoteColor);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 15px 0;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rpg-choices h4 {
+  margin: 0 0 15px 0;
+  color: var(--SmartThemeQuoteColor);
+  text-align: center;
+  font-size: 16px;
+}
+
+#rpg-choice-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.rpg-choice-button {
+  padding: 15px;
+  text-align: left;
+  background: linear-gradient(135deg, rgba(100, 150, 200, 0.2), rgba(80, 120, 180, 0.2));
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.rpg-choice-button:hover {
+  background: linear-gradient(135deg, rgba(120, 170, 220, 0.3), rgba(100, 140, 200, 0.3));
+  border-color: var(--SmartThemeQuoteColor);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.rpg-choice-button small {
+  display: block;
+  margin-top: 5px;
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.rpg-custom-action {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--SmartThemeBorderColor);
+}
+
+#rpg-custom-input {
+  flex: 1;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 5px;
+  color: var(--SmartThemeBodyColor);
+  font-size: 13px;
+}
+
+#rpg-custom-input:focus {
+  outline: none;
+  border-color: var(--SmartThemeQuoteColor);
+}
+
+#rpg-custom-submit {
+  padding: 10px 20px;
+}
+
+/* Scrollbar styling */
+.rpg-panel-content::-webkit-scrollbar,
+#rpg-inventory-list::-webkit-scrollbar,
+#rpg-relationships-list::-webkit-scrollbar,
+.rpg-visited-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rpg-panel-content::-webkit-scrollbar-track,
+#rpg-inventory-list::-webkit-scrollbar-track,
+#rpg-relationships-list::-webkit-scrollbar-track,
+.rpg-visited-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.rpg-panel-content::-webkit-scrollbar-thumb,
+#rpg-inventory-list::-webkit-scrollbar-thumb,
+#rpg-relationships-list::-webkit-scrollbar-thumb,
+.rpg-visited-list::-webkit-scrollbar-thumb {
+  background: var(--SmartThemeQuoteColor);
+  border-radius: 4px;
+}
+
+.rpg-panel-content::-webkit-scrollbar-thumb:hover,
+#rpg-inventory-list::-webkit-scrollbar-thumb:hover,
+#rpg-relationships-list::-webkit-scrollbar-thumb:hover,
+.rpg-visited-list::-webkit-scrollbar-thumb:hover {
+  background: var(--SmartThemeBodyColor);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  #rpg-choice-buttons {
+    grid-template-columns: 1fr;
+  }
+  
+  .rpg-actions {
+    flex-direction: column;
+  }
+  
+  .rpg-custom-action {
+    flex-direction: column;
+  }
+}
