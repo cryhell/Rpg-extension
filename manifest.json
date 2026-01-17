@@ -1,12 +1,10 @@
 {
-    "name": "ST-RPG-Master",
+    "name": "st-rpg-engine",
     "display_name": "RPG Master Engine",
-    "description": "Full RPG Framework: Inventory, Map, Relationships, and Choice UI.",
     "version": "1.1.0",
+    "description": "Full RPG Framework: Inventory, Map, Relationships, and Choice UI.",
     "author": "AI Assistant",
-    "js": "Index.js"
-    "css": "Style.css"
-}      "max": 1440
-    }
-  ]
+    "entrypoint": "index.js",
+    "js": ["index.js"],
+    "css": ["style.css"]
 }
