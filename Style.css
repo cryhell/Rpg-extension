@@ -1,40 +1,70 @@
-/* SillyTavern RPG Extension Styles */
-
-.rpg-panel {
-  background: var(--SmartThemeBlurTintColor);
-  border: 1px solid var(--SmartThemeBorderColor);
-  border-radius: 10px;
-  padding: 15px;
-  margin: 10px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+/* RPG HUD Container */
+#rpg-hud-sidebar {
+    background: rgba(20, 20, 25, 0.95);
+    border-left: 2px solid #b8860b;
+    color: #eee;
+    padding: 15px;
+    font-family: 'Segoe UI', sans-serif;
+    height: 100%;
+    overflow-y: auto;
 }
 
-.rpg-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  border-bottom: 1px solid var(--SmartThemeBorderColor);
-  padding-bottom: 10px;
+.rpg-stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
 }
 
-.rpg-panel-header h3 {
-  margin: 0;
-  color: var(--SmartThemeBodyColor);
+.rpg-title {
+    color: #ffd700;
+    text-transform: uppercase;
+    font-size: 0.9em;
+    font-weight: bold;
+    border-bottom: 1px solid #b8860b;
+    margin-bottom: 8px;
 }
 
-.rpg-panel-content {
-  max-height: 500px;
-  overflow-y: auto;
+/* Choice Buttons */
+.rpg-choice-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
 }
 
-.rpg-section {
-  margin: 15px 0;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
+.rpg-choice-btn {
+    background: #2c2c34;
+    border: 1px solid #b8860b;
+    color: white;
+    padding: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    border-radius: 4px;
+    font-size: 13px;
+    text-align: left;
 }
 
+.rpg-choice-btn:hover {
+    background: #b8860b;
+    color: black;
+}
+
+/* Journal Tags */
+.relationship-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+}
+.rel-lover { background: #ff4d4d; color: white; }
+.rel-friend { background: #4caf50; color: white; }
+.rel-enemy { background: #333; color: white; border: 1px solid red; }
 .rpg-section h4 {
   margin: 0 0 10px 0;
   color: var(--SmartThemeQuoteColor);
