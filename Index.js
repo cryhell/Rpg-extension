@@ -1,323 +1,138 @@
 import { extension_settings, getContext, saveSettingsDebounced } from "../../../extensions.js";
 import { eventSource, event_types } from "../../../script.js";
+import { addExtensionControls } from "../../..//extensions.js";
 
-const defaultRPGState = {
+// --- State Management ---
+const defaultSettings = {
     inventory: [],
     journal: {}, 
-    world: {
-        time: { day: 1, hour: 8 },
-        location: "Starting Village",
-        coords: [0, 0]
-    }
+    location: "Starting Village",
+    day: 1,
+    hour: 8
 };
 
-function getRPG() {
-    if (!extension_settings.rpg_engine) {
-        extension_settings.rpg_engine = JSON.parse(JSON.stringify(defaultRPGState));
-    }
-    return extension_settings.rpg_engine;
+// Initialize settings
+if (!extension_settings.rpg_engine) {
+    extension_settings.rpg_engine = Object.assign({}, defaultSettings);
 }
 
-// --- Data Parser: Interprets AI "hidden" commands ---
-function scanAIResponse(text) {
+// --- Logic: Data Parsing & Hiding Tags ---
+function processMessage(mesId) {
+    const context = getContext();
+    const msg = context.chat[mesId];
+    if (msg.role !== 'assistant') return;
+
+    let text = msg.mes;
     const dataRegex = /\[DATA: (.*?)\]/g;
     let match;
-    const rpg = getRPG();
-    let updated = false;
+    let foundUpdate = false;
 
+    // 1. Parse Data
     while ((match = dataRegex.exec(text)) !== null) {
         try {
-            const update = JSON.parse(match[1]);
-            if (update.item) { rpg.inventory.push(update.item); updated = true; }
-            if (update.location) { rpg.world.location = update.location; updated = true; }
-            if (update.npc) {
-                rpg.journal[update.npc.name] = {
-                    relation: update.npc.relation || "Acquaintance",
-                    notes: update.npc.notes || ""
+            const data = JSON.parse(match[1]);
+            if (data.item) extension_settings.rpg_engine.inventory.push(data.item);
+            if (data.location) extension_settings.rpg_engine.location = data.location;
+            if (data.npc) {
+                extension_settings.rpg_engine.journal[data.npc.name] = {
+                    relation: data.npc.relation || "Met",
+                    notes: data.npc.notes || ""
                 };
-                updated = true;
             }
-        } catch (e) { console.error("RPG Engine Error:", e); }
+            foundUpdate = true;
+        } catch (e) { console.error("RPG Engine Parse Error", e); }
     }
-    if (updated) {
+
+    // 2. Hide the [DATA] tags and [Choice] lines from the actual chat bubble
+    const cleanText = text.replace(/\[DATA:.*?\]/g, '').trim();
+    
+    // 3. Update UI if needed
+    if (foundUpdate) {
         saveSettingsDebounced();
-        renderHUD();
+        updateHUD();
     }
+
+    // 4. Inject Choice Buttons
+    renderChoices(text, mesId);
 }
 
-// --- UI: The Sidebar HUD ---
-function renderHUD() {
-    const rpg = getRPG();
-    const journalHtml = Object.entries(rpg.journal).map(([name, data]) => `
-        <div class="journal-entry">
-            <strong>${name}</strong>: <span class="rel-tag">${data.relation}</span>
-            <div class="journal-notes">${data.notes}</div>
+// --- UI: Creation ---
+function updateHUD() {
+    const s = extension_settings.rpg_engine;
+    const journalHtml = Object.entries(s.journal).map(([name, data]) => `
+        <div class="rpg-journal-item">
+            <b>${name}</b> (${data.relation})<br><small>${data.notes}</small>
         </div>
     `).join('');
 
-    const hudHtml = `
-        <div id="rpg-hud">
-            <div class="rpg-section">
-                <div class="rpg-label">📍 LOCATION</div>
-                <div class="rpg-value">${rpg.world.location} (X:${rpg.world.coords[0]}, Y:${rpg.world.coords[1]})</div>
-            </div>
-            <div class="rpg-section">
-                <div class="rpg-label">🎒 INVENTORY</div>
-                <div class="rpg-value">${rpg.inventory.length ? rpg.inventory.join(", ") : "Nothing yet"}</div>
-            </div>
-            <div class="rpg-section">
-                <div class="rpg-label">📖 JOURNAL</div>
-                <div class="journal-container">${journalHtml || "No NPCs met yet"}</div>
-            </div>
+    const html = `
+        <div id="rpg-master-panel">
+            <h3>🌍 ${s.location}</h3>
+            <p>📅 Day ${s.day} | 🕒 ${s.hour}:00</p>
+            <hr>
+            <h4>🎒 Inventory</h4>
+            <p>${s.inventory.join(', ') || 'Empty'}</p>
+            <hr>
+            <h4>📖 Journal</h4>
+            <div style="max-height:150px; overflow-y:auto;">${journalHtml || 'No one met yet.'}</div>
         </div>
     `;
 
-    if ($('#rpg-hud').length) $('#rpg-hud').replaceWith(hudHtml);
-    else $('#extensions_settings').append(hudHtml);
+    if ($('#rpg-master-panel').length) {
+        $('#rpg-master-panel').replaceWith(html);
+    } else {
+        $('#extensions_settings').prepend(html);
+    }
 }
 
-// --- Choice Buttons ---
-function injectChoices(messageText, messageId) {
+function renderChoices(text, mesId) {
     const choiceRegex = /\[Choice (\d)\]: (.*)/g;
     let match;
-    const choices = [];
-    while ((match = choiceRegex.exec(messageText)) !== null) {
-        choices.push(match[2]);
+    const buttons = [];
+    
+    while ((match = choiceRegex.exec(text)) !== null) {
+        const choiceText = match[2];
+        const btn = $(`<button class="rpg-choice-btn">${choiceText}</button>`);
+        btn.on('click', () => {
+            $('#send_textarea').val(choiceText).trigger('input');
+            $('#send_but').click();
+        });
+        buttons.push(btn);
     }
 
-    if (choices.length > 0) {
-        const btnGroup = $('<div class="rpg-btn-group"></div>');
-        choices.forEach(c => {
-            const btn = $(`<button class="rpg-choice-btn">${c}</button>`);
-            btn.on('click', () => {
-                $('#send_textarea').val(c).trigger('input');
-                $('#send_but').click();
-            });
-            btnGroup.append(btn);
-        });
-        $(`[data-id="${messageId}"] .mes_text`).append(btnGroup);
+    if (buttons.length > 0) {
+        const container = $('<div class="rpg-choice-container"></div>');
+        buttons.forEach(b => container.append(b));
+        $(`[data-id="${mesId}"] .mes_text`).append(container);
     }
 }
 
-// --- Listeners ---
-eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => {
-    const context = getContext();
-    const msg = context.chat[mesId];
-    if (msg.role === 'assistant') {
-        scanAIResponse(msg.mes);
-        injectChoices(msg.mes, mesId);
-    }
-});
+// --- Integration ---
+function initExtension() {
+    // Add a button to the Extensions list (Puzzle icon)
+    const settingsHtml = `
+        <div class="rpg-settings">
+            <h4>RPG Master Engine</h4>
+            <p>Settings and state are handled automatically.</p>
+            <button id="reset-rpg" class="menu_button">Reset Game State</button>
+        </div>
+    `;
+    
+    addExtensionControls(settingsHtml, "RPG Master", () => {
+        updateHUD();
+    }, "ra-scroll-unfurled");
+
+    // Listen for messages
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => processMessage(mesId));
+    
+    // Update UI on load
+    updateHUD();
+    console.log("RPG Master Engine Loaded");
+}
 
 $(document).ready(() => {
-    renderHUD();
-}); id="rpg-import" class="menu_button">Import Save</button>
-      </div>
-    </div>
-  `);
-  
-  $('#extensions_settings').append(panel);
-  
-  // Toggle panel
-  $('#rpg-toggle').on('click', function() {
-    $('#rpg-panel-content').toggle();
-    $(this).text($('#rpg-panel-content').is(':visible') ? '▼' : '▶');
-  });
-  
-  // Reset game
-  $('#rpg-reset').on('click', function() {
-    if (confirm('Are you sure you want to reset all game progress?')) {
-      gameState = {
-        relationships: {},
-        inventory: [],
-        location: 'Unknown',
-        worldTime: { date: '1st of Spring, Year 1', timeOfDay: 'Morning', totalMinutes: 480 },
-        map: { currentRegion: 'Starting Area', visitedLocations: [] }
-      };
-      saveGameState();
-      updateUI();
-      window.toastr?.success('Game reset successfully!', 'RPG Extension');
-    }
-  });
-  
-  // Export save
-  $('#rpg-export').on('click', function() {
-    const dataStr = JSON.stringify(gameState, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'rpg-save.json';
-    link.click();
-    window.toastr?.success('Save exported!', 'RPG Extension');
-  });
-  
-  // Import save
-  $('#rpg-import').on('click', function() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          gameState = JSON.parse(event.target.result);
-          saveGameState();
-          updateUI();
-          window.toastr?.success('Save imported successfully!', 'RPG Extension');
-        } catch (err) {
-          window.toastr?.error('Failed to import save file.', 'RPG Extension');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  });
-  
-  updateUI();
-}
-
-// Update UI displays
-function updateUI() {
-  // Time and location
-  $('#rpg-time-display').html(`
-    <div><strong>Date:</strong> ${gameState.worldTime.date}</div>
-    <div><strong>Time:</strong> ${gameState.worldTime.timeOfDay}</div>
-  `);
-  
-  $('#rpg-location-display').html(`
-    <div><strong>Location:</strong> ${gameState.location}</div>
-    <div><strong>Region:</strong> ${gameState.map.currentRegion}</div>
-  `);
-  
-  // Inventory
-  $('#rpg-inventory-count').text(gameState.inventory.length);
-  const inventoryHTML = gameState.inventory.map(item => `
-    <div class="rpg-item">
-      <strong>${item.name}</strong> x${item.quantity}
-      ${item.description ? `<br><small>${item.description}</small>` : ''}
-    </div>
-  `).join('');
-  $('#rpg-inventory-list').html(inventoryHTML || '<em>Empty</em>');
-  
-  // Relationships
-  const relCount = Object.keys(gameState.relationships).length;
-  $('#rpg-relationships-count').text(relCount);
-  const relHTML = Object.entries(gameState.relationships).map(([name, rel]) => `
-    <div class="rpg-relationship">
-      <strong>${name}</strong> - ${rel.category}
-      <br><small>Affection: ${rel.affection} | Met: ${rel.metAt}</small>
-    </div>
-  `).join('');
-  $('#rpg-relationships-list').html(relHTML || '<em>No relationships yet</em>');
-  
-  // Map
-  const mapHTML = `
-    <div><strong>Visited:</strong> ${gameState.map.visitedLocations.length} locations</div>
-    <div class="rpg-visited-list">${gameState.map.visitedLocations.join(', ') || 'None'}</div>
-  `;
-  $('#rpg-map-display').html(mapHTML);
-}
-
-// Create choice buttons after each message
-function createChoiceButtons() {
-  // Remove existing choices
-  $('#rpg-choices').remove();
-  
-  const choicesHTML = `
-    <div id="rpg-choices" class="rpg-choices">
-      <h4>What would you like to do?</h4>
-      <div id="rpg-choice-buttons"></div>
-      <div class="rpg-custom-action">
-        <input type="text" id="rpg-custom-input" placeholder="Type your own action...">
-        <button id="rpg-custom-submit" class="menu_button">Submit</button>
-      </div>
-    </div>
-  `;
-  
-  // Append to chat
-  $('#chat').append(choicesHTML);
-  
-  // Generate and display choices
-  generateChoices().then(choices => {
-    const buttonsHTML = choices.map((choice, i) => `
-      <button class="rpg-choice-button menu_button" data-action="${choice.action}">
-        ${i + 1}. ${choice.action}
-        ${choice.description ? `<br><small>${choice.description}</small>` : ''}
-      </button>
-    `).join('');
-    
-    $('#rpg-choice-buttons').html(buttonsHTML);
-    
-    $('.rpg-choice-button').on('click', function() {
-      const action = $(this).data('action');
-      executeAction(action);
-    });
-  });
-  
-  // Custom action submit
-  $('#rpg-custom-submit').on('click', function() {
-    const customAction = $('#rpg-custom-input').val().trim();
-    if (customAction) {
-      executeAction(customAction);
-    }
-  });
-  
-  $('#rpg-custom-input').on('keypress', function(e) {
-    if (e.which === 13) {
-      $('#rpg-custom-submit').click();
-    }
-  });
-  
-  // Scroll to choices
-  setTimeout(() => {
-    $('#rpg-choices')[0]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, 100);
-}
-
-// Execute chosen action
-function executeAction(action) {
-  // Remove choice buttons
-  $('#rpg-choices').remove();
-  
-  // Advance time
-  advanceTime(settings.time_progression_rate);
-  
-  // Send action as message
-  $('#send_textarea').val(action);
-  $('#send_but').trigger('click');
-}
-
-// Message received event handler
-function onMessageReceived() {
-  if (settings.auto_generate_choices) {
-    setTimeout(createChoiceButtons, 1000);
-  }
-}
-
-// Initialize extension
-jQuery(async () => {
-  try {
-    console.log('RPG Extension: Initializing...');
-    
-    loadSettings();
-    createUIPanel();
-    
-    // Listen for message events
-    $(document).on('message_received', onMessageReceived);
-    
-    console.log('RPG Extension: Loaded successfully');
-    window.toastr?.success('Interactive Story RPG extension loaded!', 'RPG Extension');
-  } catch (error) {
-    console.error('RPG Extension: Failed to initialize', error);
-    window.toastr?.error('Failed to load RPG extension: ' + error.message, 'RPG Extension');
-  }
-});
-
-// Export functions for external use
-window.rpgExtension = {
-  addItem,
+    initExtension();
+});dItem,
   removeItem,
   updateRelationship,
   setLocation,
