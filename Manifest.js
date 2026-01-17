@@ -5,8 +5,8 @@
   "description": "Transform SillyTavern into a fully-fledged RPG with choices, relationships, inventory, and world tracking",
   "author": "Your Name",
   "requires": ["SillyTavern >= 1.10.0"],
-  "js": "index.js",
-  "css": "style.css",
+  "js": "Index.js",
+  "css": "Style.css",
   "settings": [
     {
       "id": "auto_generate_choices",
