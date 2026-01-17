@@ -1,40 +1,125 @@
-/**
- * SillyTavern RPG Extension
- * Main entry point
- */
+import { extension_settings, getContext, saveSettingsDebounced } from "../../../extensions.js";
+import { registerSlashCommand } from "../../../slash-commands.js";
 
-const extensionName = 'rpg-extension';
-
-// Extension state
-let gameState = {
-  relationships: {},
-  inventory: [],
-  location: 'Unknown',
-  worldTime: {
-    date: '1st of Spring, Year 1',
-    timeOfDay: 'Morning',
-    totalMinutes: 480 // 8:00 AM
-  },
-  map: {
-    currentRegion: 'Starting Area',
-    visitedLocations: []
-  }
+// Initialize Data Structure
+const defaultRPGState = {
+    inventory: [],
+    journal: {}, // { "Name": { status: "Met", notes: "...", relation: "Neutral" } }
+    world: {
+        time: { day: 1, hour: 8, month: "Spring" },
+        location: "Unknown Land",
+        reputation: 0,
+        map_coord: [0, 0]
+    }
 };
 
-let settings = {
-  auto_generate_choices: true,
-  num_choices: 4,
-  enable_time_tracking: true,
-  time_progression_rate: 30
-};
+function getRPG() {
+    if (!extension_settings.rpg_engine) {
+        extension_settings.rpg_engine = defaultRPGState;
+    }
+    return extension_settings.rpg_engine;
+}
 
-// Load settings
-function loadSettings() {
-  const extensionSettings = window.SillyTavern?.getContext?.()?.extensionSettings?.[extensionName];
-  if (extensionSettings) {
-    settings = { ...settings, ...extensionSettings };
-  }
-  
+// --- Data Parsing (The Magic) ---
+// This looks for [DATA: {...}] in the AI response to update the UI automatically
+function scanAIResponseForUpdates(text) {
+    const dataRegex = /\[DATA: (.*?)\]/g;
+    let match;
+    const rpg = getRPG();
+
+    while ((match = dataRegex.exec(text)) !== null) {
+        try {
+            const update = JSON.parse(match[1]);
+            
+            if (update.item) rpg.inventory.push(update.item);
+            if (update.location) rpg.world.location = update.location;
+            if (update.npc) {
+                const npcName = update.npc.name;
+                rpg.journal[npcName] = {
+                    status: update.npc.status || "Known",
+                    notes: update.npc.notes || rpg.journal[npcName]?.notes || "",
+                    relation: update.npc.relation || "Acquaintance"
+                };
+            }
+        } catch (e) { console.error("RPG Engine failed to parse update:", e); }
+    }
+    saveSettingsDebounced();
+    renderHUD();
+}
+
+// --- UI Components ---
+function renderHUD() {
+    const rpg = getRPG();
+    const hud = $(`
+        <div id="rpg-hud-sidebar">
+            <div class="rpg-stat-card">
+                <div class="rpg-title">📍 ${rpg.world.location}</div>
+                <div>📅 Day ${rpg.world.time.day} | ${rpg.world.time.hour}:00</div>
+            </div>
+
+            <div class="rpg-stat-card">
+                <div class="rpg-title">🎒 Inventory</div>
+                <div id="inv-list">${rpg.inventory.length ? rpg.inventory.join(', ') : 'Empty'}</div>
+            </div>
+
+            <div class="rpg-stat-card">
+                <div class="rpg-title">📖 Character Journal</div>
+                <div id="journal-list">
+                    ${Object.entries(rpg.journal).map(([name, data]) => `
+                        <div style="margin-bottom:5px;">
+                            <strong>${name}</strong> 
+                            <span class="relationship-tag rel-${data.relation.toLowerCase()}">${data.relation}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `);
+
+    // Add to SillyTavern Sidebar
+    const container = $('#extensions_settings');
+    $('#rpg-hud-sidebar').remove();
+    container.append(hud);
+}
+
+// --- Choice UI Logic ---
+function injectChoices(messageText, messageId) {
+    const choices = [];
+    const choiceRegex = /\[Choice (\d)\]: (.*)/g;
+    let m;
+    while ((m = choiceRegex.exec(messageText)) !== null) {
+        choices.push(m[2]);
+    }
+
+    if (choices.length === 0) return;
+
+    const choiceContainer = $('<div class="rpg-choice-group"></div>');
+    choices.forEach(text => {
+        const btn = $(`<button class="rpg-choice-btn">${text}</button>`);
+        btn.on('click', () => {
+            $('#send_textarea').val(text);
+            $('#send_but').click();
+        });
+        choiceContainer.append(btn);
+    });
+
+    $(`[data-id="${messageId}"] .mes_text`).append(choiceContainer);
+}
+
+// --- Init & Hooks ---
+$(document).ready(() => {
+    // Watch for new messages
+    SillyTavern.on('message_rendered', (messageId) => {
+        const context = getContext();
+        const msg = context.chat[messageId];
+        if (msg.role === 'assistant') {
+            scanAIResponseForUpdates(msg.mes);
+            injectChoices(msg.mes, messageId);
+        }
+    });
+
+    renderHUD();
+});  
   // Load saved game state
   const savedState = localStorage.getItem(`${extensionName}_gameState`);
   if (savedState) {
