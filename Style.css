@@ -1,40 +1,62 @@
-/* RPG HUD Container */
-#rpg-hud-sidebar {
-    background: rgba(20, 20, 25, 0.95);
-    border-left: 2px solid #b8860b;
-    color: #eee;
-    padding: 15px;
-    font-family: 'Segoe UI', sans-serif;
-    height: 100%;
-    overflow-y: auto;
-}
-
-.rpg-stat-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid #444;
+#rpg-hud {
+    background: #1a1a24;
+    border: 1px solid #c5a059;
     padding: 10px;
-    margin-bottom: 10px;
+    margin: 10px;
     border-radius: 5px;
+    color: #e0e0e0;
 }
 
-.rpg-title {
-    color: #ffd700;
-    text-transform: uppercase;
-    font-size: 0.9em;
+.rpg-section {
+    margin-bottom: 15px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.rpg-label {
+    font-size: 10px;
+    color: #c5a059;
     font-weight: bold;
-    border-bottom: 1px solid #b8860b;
-    margin-bottom: 8px;
+    letter-spacing: 1px;
 }
 
-/* Choice Buttons */
-.rpg-choice-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 15px;
-    padding: 10px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
+.rpg-value {
+    font-size: 14px;
+    margin-top: 3px;
+}
+
+.journal-container {
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+}
+
+.rel-tag {
+    color: #ffcc00;
+    font-style: italic;
+}
+
+.rpg-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.rpg-choice-btn {
+    background: #2a2a3a;
+    border: 1px solid #c5a059;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.rpg-choice-btn:hover {
+    background: #c5a059;
+    color: black;
+}    border-radius: 8px;
 }
 
 .rpg-choice-btn {
