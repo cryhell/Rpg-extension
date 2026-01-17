@@ -5,6 +5,6 @@
     "description": "Full RPG Framework: Inventory, Map, Relationships, and Choice UI.",
     "author": "AI Assistant",
     "entrypoint": "index.js",
-    "js": ["index.js"],
-    "css": ["style.css"]
+    "js": ["Index.js"],
+    "css": ["Style.css"]
 }
